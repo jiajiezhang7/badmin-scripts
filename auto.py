@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from venue_booking_info import VenueBooking
 import subprocess
 import os
+import yaml  # 添加yaml导入
 
 def setup_driver(headless=False):
     """优化的浏览器设置"""
@@ -112,15 +113,14 @@ def wait_until_time(target_hour=12, target_minute=0, target_second=0):
             break
         time.sleep(0.1)
 
-def prepare_booking(driver, booking, form_data):
+def prepare_booking(driver, booking, form_data, student_id, password):
     """提前准备表单"""
     try:
         print("正在打开登录页面...")
         driver.get("https://ids.shanghaitech.edu.cn/authserver/login?service=https%3A%2F%2Foa.shanghaitech.edu.cn%2Fworkflow%2Frequest%2FAddRequest.jsp%3Fworkflowid%3D14862")
         
         print("正在登录...")
-        # TODO Your Student ID & Password
-        if not booking.login(" Student ID", "Password"):
+        if not booking.login(student_id, password):
             raise Exception("登录失败")
         
         time.sleep(0.5)
@@ -144,16 +144,17 @@ def prepare_booking(driver, booking, form_data):
                 "63_18"   # 羽毛球6号场地
             ],
             "网球场": [
-                "63_19",  # 网球1号场地
-                "63_20",  # 网球2号场地
-                "63_21",  # 网球3号场地
-                "63_22"   # 网球4号场地
+                "63_25",  # 网球场1号场地
+                "63_26",  # 网球场2号场地
+                "63_27"   # 网球场3号场地
             ],
             "乒乓球": [
-                "63_23",  # 乒乓球1号场地
-                "63_24",  # 乒乓球2号场地
-                "63_25",  # 乒乓球3号场地
-                "63_26"   # 乒乓球4号场地
+                "63_19",  # 乒乓球1号场地
+                "63_20",  # 乒乓球2号场地
+                "63_21",  # 乒乓球3号场地
+                "63_22",  # 乒乓球4号场地
+                "63_23",  # 乒乓球5号场地
+                "63_24"   # 乒乓球6号场地
             ]
         }
         
@@ -222,45 +223,79 @@ def main():
             # 计算预订日期（两天后）
             booking_date = (datetime.now() + timedelta(days=2)).strftime('%Y-%m-%d')
             
-            # 设置表单数据
-            # "1": "11:00-12:00",
-            # "2": "12:00-13:00",
-            # "3": "13:00-14:00",
-            # "4": "14:00-15:00",
-            # "5": "15:00-16:00",
-            # "6": "16:00-17:00",
-            # "7": "17:00-18:00",
-            # "8": "18:00-19:00",
-            # "9": "19:00-20:00",
-            # "10": "20:00-21:00",
-            # "11": "21:00-22:00"
-
-            # | 代号 | 场地 |
-            # |------|------|
-            # | 63_13 | 羽毛球1号场地 |
-            # | 63_14 | 羽毛球2号场地 |
-            # | 63_15 | 羽毛球3号场地 |
-            # | 63_16 | 羽毛球4号场地 |
-            # | 63_17 | 羽毛球5号场地 |
-            # | 63_18 | 羽毛球6号场地 |
-
-            # | 63_25 | 网球场1号场地 |
-            # | 63_26 | 网球场2号场地 |
-            # | 63_27 | 网球场3号场地 |
-
-            form_data = {
-                "venue_type": "羽毛球场", 
-                "participants": "2",
-                'time_value': "4",
-                'venue_value': "63_17",
-                "people_category": "学生",
-                "third_party": "无",
-                # TODO Your Phone
-                "phone": "19858214897",
-                # TODO Your Chinese Name
-                "take_charge_person": "张嘉杰",
-                # Default booking date: the day after tomorrow
-                "usage_date": booking_date
+            # 从params.yaml文件中读取表单数据
+            try:
+                with open('params.yaml', 'r', encoding='utf-8') as f:
+                    params = yaml.safe_load(f)
+                    form_data = {
+                        "venue_type": params.get("venue_type", "羽毛球场"),
+                        "participants": params.get("participants", "4"),
+                        'time_value': params.get("time_value", "4"),
+                        'venue_value': params.get("venue_value", "63_17"),
+                        "people_category": params.get("people_category", "学生"),
+                        "third_party": params.get("third_party", "无"),
+                        "phone": params.get("phone", "19858214897"),
+                        "take_charge_person": params.get("take_charge_person", "张嘉杰"),
+                        # 使用计算出的后天日期，而不是从配置文件读取
+                        "usage_date": booking_date
+                    }
+                    
+                    # 读取登录信息
+                    student_id = params.get("student_id", "2023233216")
+                    password = params.get("password", "ZHANGjiajie123")
+                    
+                print(f"已从params.yaml加载配置: {form_data}")
+                print(f"已从params.yaml加载登录信息: 学号={student_id}")
+            except Exception as e:
+                print(f"读取params.yaml失败: {e}，将使用默认配置")
+                # 使用默认表单数据
+                form_data = {
+                    "venue_type": "羽毛球场", 
+                    "participants": "2",
+                    'time_value': "4",
+                    'venue_value': "63_17",
+                    "people_category": "学生",
+                    "third_party": "无",
+                    "phone": "19858214897",
+                    "take_charge_person": "张嘉杰",
+                    "usage_date": booking_date
+                }
+                # 默认登录信息
+                student_id = "2023233216"
+                password = "ZHANGjiajie123"
+            
+            # 时间段映射
+            time_slots = {
+                "1": "11:00-12:00",
+                "2": "12:00-13:00",
+                "3": "13:00-14:00",
+                "4": "14:00-15:00",
+                "5": "15:00-16:00",
+                "6": "16:00-17:00",
+                "7": "17:00-18:00",
+                "8": "18:00-19:00",
+                "9": "19:00-20:00",
+                "10": "20:00-21:00",
+                "11": "21:00-22:00"
+            }
+            
+            # 场地名称映射
+            venue_names = {
+                "63_13": "羽毛球1号场地",
+                "63_14": "羽毛球2号场地",
+                "63_15": "羽毛球3号场地",
+                "63_16": "羽毛球4号场地",
+                "63_17": "羽毛球5号场地",
+                "63_18": "羽毛球6号场地",
+                "63_19": "乒乓球1号场地",
+                "63_20": "乒乓球2号场地",
+                "63_21": "乒乓球3号场地",
+                "63_22": "乒乓球4号场地",
+                "63_23": "乒乓球5号场地",
+                "63_24": "乒乓球6号场地",
+                "63_25": "网球场1号场地",
+                "63_26": "网球场2号场地",
+                "63_27": "网球场3号场地"
             }
             
             print(f"\n开始准备预订流程 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -268,7 +303,7 @@ def main():
             booking = VenueBooking(driver)
             
             # 提前准备表单
-            prepared, available_venues, current_venue_index = prepare_booking(driver, booking, form_data)
+            prepared, available_venues, current_venue_index = prepare_booking(driver, booking, form_data, student_id, password)
             
             if prepared:
                 print(f"表单准备完成，等待提交时间 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -280,28 +315,49 @@ def main():
                 print(f"开始提交表单 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 
                 # 尝试提交当前场地
-                print(f"尝试预订场地: {available_venues[current_venue_index]} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                current_venue = available_venues[current_venue_index]
+                venue_name = venue_names.get(current_venue, current_venue)
+                print(f"尝试预订场地: {venue_name} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 submit_result = booking.submit_form()
                 
                 # 如果当前场地失败，尝试其他场地
                 if not submit_result["success"]:
-                    print(f"场地 {available_venues[current_venue_index]} 预订失败: {submit_result['reason']} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                    print(f"场地 {venue_name} 预订失败: {submit_result['reason']} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                     
                     # 使用新方法尝试其他场地
                     success = booking.try_alternative_venues(form_data, available_venues, current_venue_index)
                     
                     # 显示最终结果
                     if success:
+                        # 获取当前预订的场地代号
+                        current_venue = booking.current_venue
+                        venue_name = venue_names.get(current_venue, current_venue)
+                        time_slot = time_slots.get(form_data["time_value"], f"时间段{form_data['time_value']}")
+                        
                         print(f"\n恭喜! 场地预订成功! - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                        print(f"预订详情:")
+                        print(f"  - 日期: {form_data['usage_date']}")
+                        print(f"  - 时间段: {time_slot}")
+                        print(f"  - 场地: {venue_name}")
+                        print(f"  - 负责人: {form_data['take_charge_person']}")
                     else:
                         print(f"\n所有{form_data['venue_type']}场地都已被占用，无法预订 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 else:
-                    print(f"场地 {available_venues[current_venue_index]} 预订成功! - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                    time_slot = time_slots.get(form_data["time_value"], f"时间段{form_data['time_value']}")
+                    # 更新当前预订的场地
+                    current_venue = booking.current_venue if booking.current_venue else current_venue
+                    venue_name = venue_names.get(current_venue, current_venue)
+                    
+                    print(f"场地 {venue_name} 预订成功! - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                     print(f"\n恭喜! 场地预订成功! - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                    print(f"预订详情:")
+                    print(f"  - 日期: {form_data['usage_date']}")
+                    print(f"  - 时间段: {time_slot}")
+                    print(f"  - 场地: {venue_name}")
+                    print(f"  - 负责人: {form_data['take_charge_person']}")
                 
                 # 显示最终结果
                 if success or submit_result["success"]:
-                    print(f"\n恭喜! 场地预订成功! - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                     # 保持页面打开一段时间
                     hold_page(driver, PAGE_HOLD_TIME)
                 else:

@@ -7,6 +7,7 @@ import time
 from venue_booking_info import VenueBooking
 import subprocess
 import os
+import yaml
 
 def manage_proxy(disable=True):
     """管理系统代理设置
@@ -98,57 +99,59 @@ def main():
     original_proxy_settings = None
     
     try:
-        # 设置表单数据
-        # "1": "11:00-12:00",
-        # "2": "12:00-13:00",
-        # "3": "13:00-14:00",
-        # "4": "14:00-15:00",
-        # "5": "15:00-16:00",
-        # "6": "16:00-17:00",
-        # "7": "17:00-18:00",
-        # "8": "18:00-19:00",
-        # "9": "19:00-20:00",
-        # "10": "20:00-21:00",
-        # "11": "21:00-22:00"
-
-
-        ### 羽毛球场
-        # "63_13": "羽毛球1号场地",
-        # "63_14": "羽毛球2号场地",
-        # "63_15": "羽毛球3号场地",
-        # "63_16": "羽毛球4号场地",
-        # "63_17": "羽毛球5号场地",
-        # "63_18": "羽毛球6号场地",
+        # 从params.yaml文件中读取表单数据
+        try:
+            with open('params.yaml', 'r', encoding='utf-8') as f:
+                params = yaml.safe_load(f)
+                form_data = {
+                    "venue_type": params.get("venue_type", "羽毛球场"),
+                    "participants": params.get("participants", "4"),
+                    'time_value': params.get("time_value", "4"),
+                    'venue_value': params.get("venue_value", "63_17"),
+                    "people_category": params.get("people_category", "学生"),
+                    "third_party": params.get("third_party", "无"),
+                    "phone": params.get("phone", "19858214897"),
+                    "take_charge_person": params.get("take_charge_person", "张嘉杰"),
+                    "usage_date": params.get("usage_date", "2025-3-05")
+                }
+                
+                # 读取登录信息
+                student_id = params.get("student_id", "2023233216")
+                password = params.get("password", "ZHANGjiajie123")
+                
+            print(f"已从params.yaml加载配置: {form_data}")
+            print(f"已从params.yaml加载登录信息: 学号={student_id}")
+        except Exception as e:
+            print(f"读取params.yaml失败: {e}，将使用默认配置")
+            # 使用默认表单数据
+            form_data = {
+                "venue_type": "羽毛球场",  # 可选：羽毛球场、网球场、乒乓球
+                "participants": "4",
+                'time_value': "4",
+                'venue_value': "63_17", # 羽毛球1-6号：63_13~63_18
+                "people_category": "学生",
+                "third_party": "无",
+                "phone": "19858214897",
+                "take_charge_person": "张嘉杰",
+                "usage_date": "2025-3-05"
+            }
+            # 默认登录信息
+            student_id = "2023233216"
+            password = "ZHANGjiajie123"
         
-        ### 乒乓球场
-        # | 代号 | 场地 |
-        # |------|------|
-        # | 63_19 | 乒乓球1号场地 |
-        # | 63_20 | 乒乓球2号场地 |
-        # | 63_21 | 乒乓球3号场地 |
-        # | 63_22 | 乒乓球4号场地 |
-        # | 63_23 | 乒乓球5号场地 |
-        # | 63_24 | 乒乓球6号场地 |
-
-        # ### 网球场
-        # | 代号 | 场地 |
-        # |------|------|
-        # | 63_25 | 网球场1号场地 |
-        # | 63_26 | 网球场2号场地 |
-        # | 63_27 | 网球场3号场地 |
-        form_data = {
-            "venue_type": "羽毛球场",  # 可选：羽毛球场、网球场、乒乓球
-            "participants": "4",
-            'time_value': "4",
-            'venue_value': "63_17", # 羽毛球1-6号：63_13~63_18
-            "people_category": "学生",
-            "third_party": "无",
-            # TODO Your Phone
-            "phone": "19858214897",
-            # TODO Your Chinese Name
-            "take_charge_person": "张嘉杰",
-            # TODO Your Usage Date
-            "usage_date": "2025-3-05"
+        # 时间段映射
+        time_slots = {
+            "1": "11:00-12:00",
+            "2": "12:00-13:00",
+            "3": "13:00-14:00",
+            "4": "14:00-15:00",
+            "5": "15:00-16:00",
+            "6": "16:00-17:00",
+            "7": "17:00-18:00",
+            "8": "18:00-19:00",
+            "9": "19:00-20:00",
+            "10": "20:00-21:00",
+            "11": "21:00-22:00"
         }
         
         # 创建浏览器实例
@@ -162,8 +165,7 @@ def main():
         driver.get("https://ids.shanghaitech.edu.cn/authserver/login?service=https%3A%2F%2Foa.shanghaitech.edu.cn%2Fworkflow%2Frequest%2FAddRequest.jsp%3Fworkflowid%3D14862")
         
         # 执行登录
-        # TODO Your Student ID & Password
-        if not booking.login("2023233216", "ZHANGjiajie123"):
+        if not booking.login(student_id, password):
             raise Exception("登录失败")
         
         # 等待页面加载
@@ -188,17 +190,37 @@ def main():
                 "63_18"   # 羽毛球6号场地
             ],
             "网球场": [
-                "63_19",  # 网球1号场地
-                "63_20",  # 网球2号场地
-                "63_21",  # 网球3号场地
-                "63_22"   # 网球4号场地
+                "63_25",  # 网球1号场地
+                "63_26",  # 网球2号场地
+                "63_27"   # 网球3号场地
             ],
             "乒乓球": [
-                "63_23",  # 乒乓球1号场地
-                "63_24",  # 乒乓球2号场地
-                "63_25",  # 乒乓球3号场地
-                "63_26"   # 乒乓球4号场地
+                "63_19",  # 乒乓球1号场地
+                "63_20",  # 乒乓球2号场地
+                "63_21",  # 乒乓球3号场地
+                "63_22",  # 乒乓球4号场地
+                "63_23",  # 乒乓球5号场地
+                "63_24"   # 乒乓球6号场地
             ]
+        }
+        
+        # 场地名称映射
+        venue_names = {
+            "63_13": "羽毛球1号场地",
+            "63_14": "羽毛球2号场地",
+            "63_15": "羽毛球3号场地",
+            "63_16": "羽毛球4号场地",
+            "63_17": "羽毛球5号场地",
+            "63_18": "羽毛球6号场地",
+            "63_19": "乒乓球1号场地",
+            "63_20": "乒乓球2号场地",
+            "63_21": "乒乓球3号场地",
+            "63_22": "乒乓球4号场地",
+            "63_23": "乒乓球5号场地",
+            "63_24": "乒乓球6号场地",
+            "63_25": "网球场1号场地",
+            "63_26": "网球场2号场地",
+            "63_27": "网球场3号场地"
         }
         
         # 根据用户选择的场地类型选择合适的场地列表
@@ -224,12 +246,30 @@ def main():
             
             # 显示最终结果
             if success:
-                print("\n恭喜! 场地预订成功!")
+                # 获取当前预订的场地代号
+                current_venue = booking.current_venue
+                venue_name = venue_names.get(current_venue, current_venue)
+                time_slot = time_slots.get(form_data["time_value"], f"时间段{form_data['time_value']}")
+                
+                print(f"\n恭喜! 场地预订成功!")
+                print(f"预订详情:")
+                print(f"  - 日期: {form_data['usage_date']}")
+                print(f"  - 时间段: {time_slot}")
+                print(f"  - 场地: {venue_name}")
+                print(f"  - 负责人: {form_data['take_charge_person']}")
             else:
                 print(f"\n所有{venue_type}场地都已被占用，无法预订")
         else:
-            print(f"场地 {available_venues[current_venue_index]} 预订成功!")
-            print("\n恭喜! 场地预订成功!")
+            venue_name = venue_names.get(available_venues[current_venue_index], available_venues[current_venue_index])
+            time_slot = time_slots.get(form_data["time_value"], f"时间段{form_data['time_value']}")
+            
+            print(f"场地 {venue_name} 预订成功!")
+            print(f"\n恭喜! 场地预订成功!")
+            print(f"预订详情:")
+            print(f"  - 日期: {form_data['usage_date']}")
+            print(f"  - 时间段: {time_slot}")
+            print(f"  - 场地: {venue_name}")
+            print(f"  - 负责人: {form_data['take_charge_person']}")
         
         # 等待几秒查看结果
         time.sleep(600)

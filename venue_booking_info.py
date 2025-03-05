@@ -43,6 +43,7 @@ class VenueBooking:
     def __init__(self, driver):
         self.driver = driver
         self.form_data = None  # 存储表单数据以供后续使用
+        self.current_venue = None  # 存储当前预订的场地
 
     def wait_for_element(self, by, value, timeout=10, action="visible"):
         try:
@@ -294,6 +295,7 @@ class VenueBooking:
             
             if submit_result["success"]:
                 print(f"场地 {available_venues[i]} 预订成功!")
+                self.current_venue = available_venues[i]  # 更新当前预订的场地
                 success = True
                 break
             else:
@@ -328,6 +330,9 @@ class VenueBooking:
                         print("检测到成功提交的弹窗")
                         # 接受弹窗
                         alert.accept()
+                        # 如果表单数据存在，更新当前预订的场地
+                        if self.form_data and "venue_value" in self.form_data:
+                            self.current_venue = self.form_data["venue_value"]
                         return {"success": True, "reason": ""}
                     
                     # 接受弹窗
@@ -340,6 +345,9 @@ class VenueBooking:
                 current_url = self.driver.current_url
                 if "WorkflowDirection" in current_url:
                     print(f"检测到成功提交的URL: {current_url}")
+                    # 如果表单数据存在，更新当前预订的场地
+                    if self.form_data and "venue_value" in self.form_data:
+                        self.current_venue = self.form_data["venue_value"]
                     return {"success": True, "reason": ""}
                 
                 # 确保我们在正确的frame中
@@ -352,6 +360,9 @@ class VenueBooking:
                     current_url = self.driver.current_url
                     if "WorkflowDirection" in current_url:
                         print(f"检测到成功提交的URL: {current_url}")
+                        # 如果表单数据存在，更新当前预订的场地
+                        if self.form_data and "venue_value" in self.form_data:
+                            self.current_venue = self.form_data["venue_value"]
                         return {"success": True, "reason": ""}
                     
                     # 尝试切换到bodyiframe
