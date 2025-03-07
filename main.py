@@ -127,13 +127,13 @@ def main():
             form_data = {
                 "venue_type": "羽毛球场",  # 可选：羽毛球场、网球场、乒乓球
                 "participants": "4",
-                'time_value': "4",
-                'venue_value': "63_17", # 羽毛球1-6号：63_13~63_18
+                'time_value': "5",
+                'venue_value': "63_18", # 羽毛球1-6号：63_13~63_18
                 "people_category": "学生",
                 "third_party": "无",
                 "phone": "19858214897",
                 "take_charge_person": "张嘉杰",
-                "usage_date": "2025-3-05"
+                "usage_date": "2025-3-09"
             }
             # 默认登录信息
             student_id = "2023233216"

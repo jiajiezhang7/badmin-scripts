@@ -39,12 +39,16 @@ time_value: "6"
   #     "63_26"   # 乒乓球4号场地
   # ]
 
+# 场地预订参数
+venue_type: "羽毛球场"
+participants: "4"
+time_value: "6"
 venue_value: "63_17"  # 羽毛球1-6号：63_13~63_18
 people_category: "学生"
 third_party: "无"
 phone: "19858214897"
 take_charge_person: "张嘉杰"
-usage_date: "2025-3-06"
+usage_date: "2025-3-08"
 
 # 登录信息
 student_id: "2023233216"
