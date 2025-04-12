@@ -1,6 +1,3 @@
-# 预约参数配置
-venue_type: "羽毛球场"  # 可选：羽毛球场、网球场、乒乓球
-participants: "4"
 
 # | 代号 | 时间段 |
 # |------|--------|
@@ -15,8 +12,6 @@ participants: "4"
 # | 9 | 19:00-20:00 |
 # | 10 | 20:00-21:00 |
 # | 11 | 21:00-22:00 |
-
-time_value: "6"
 
   # "羽毛球场": [
   #     "63_13",  # 羽毛球1号场地
@@ -42,13 +37,13 @@ time_value: "6"
 # 场地预订参数
 venue_type: "羽毛球场"
 participants: "4"
-time_value: "6"
+time_value: ["5", "6","7"]  # 支持多个时间段
 venue_value: "63_17"  # 羽毛球1-6号：63_13~63_18
 people_category: "学生"
 third_party: "无"
 phone: "19858214897"
 take_charge_person: "张嘉杰"
-usage_date: "2025-3-08"
+usage_date: "2025-4-12"
 
 # 登录信息
 student_id: "2023233216"

@@ -230,48 +230,79 @@ def main():
         print(f"场地类型: {venue_type}")
         print(f"可用场地列表: {available_venues}")
         
-        # 从当前选择的场地开始
-        current_venue_index = available_venues.index(form_data["venue_value"]) if form_data["venue_value"] in available_venues else 0
-        
-        # 尝试提交当前场地
-        print(f"尝试预订场地: {available_venues[current_venue_index]}")
-        submit_result = booking.submit_form()
-        
-        # 如果当前场地失败，尝试其他场地
-        if not submit_result["success"]:
-            print(f"场地 {available_venues[current_venue_index]} 预订失败: {submit_result['reason']}")
+        # 修改表单数据处理逻辑
+        form_data_list = []
+        time_values = form_data.pop("time_value")  # 从原始form_data中移除time_value
+        if isinstance(time_values, str):
+            time_values = [time_values]  # 兼容单个时间段的情况
             
-            # 使用新方法尝试其他场地
-            success = booking.try_alternative_venues(form_data, available_venues, current_venue_index)
+        # 为每个时间段创建独立的form_data
+        for time_value in time_values:
+            current_form_data = form_data.copy()
+            current_form_data["time_value"] = time_value
+            form_data_list.append(current_form_data)
             
-            # 显示最终结果
-            if success:
-                # 获取当前预订的场地代号
-                current_venue = booking.current_venue
-                venue_name = venue_names.get(current_venue, current_venue)
-                time_slot = time_slots.get(form_data["time_value"], f"时间段{form_data['time_value']}")
+        # 按时间段优先级排序（可选）
+        form_data_list.sort(key=lambda x: x["time_value"])
+        
+        # 存储所有成功预订的结果
+        successful_bookings = []
+        
+        # 对每个时间段进行预订尝试
+        for current_form_data in form_data_list:
+            time_value = current_form_data["time_value"]
+            print(f"\n尝试预订时间段 {time_slots[time_value]}")
+            
+            # 重置场地索引
+            current_venue_index = available_venues.index(current_form_data["venue_value"]) if current_form_data["venue_value"] in available_venues else 0
+            
+            # 尝试提交当前场地
+            print(f"尝试预订场地: {available_venues[current_venue_index]}")
+            submit_result = booking.submit_form()
+            
+            if not submit_result["success"]:
+                print(f"场地 {available_venues[current_venue_index]} 预订失败: {submit_result['reason']}")
                 
-                print(f"\n恭喜! 场地预订成功!")
-                print(f"预订详情:")
-                print(f"  - 日期: {form_data['usage_date']}")
-                print(f"  - 时间段: {time_slot}")
-                print(f"  - 场地: {venue_name}")
-                print(f"  - 负责人: {form_data['take_charge_person']}")
+                # 对当前时间段尝试其他场地
+                success = booking.try_alternative_venues(current_form_data, available_venues, current_venue_index)
+                
+                if success:
+                    successful_bookings.append({
+                        "time_slot": time_slots[time_value],
+                        "venue": booking.current_venue,
+                        "date": current_form_data["usage_date"]
+                    })
             else:
-                print(f"\n所有{venue_type}场地都已被占用，无法预订")
-        else:
-            venue_name = venue_names.get(available_venues[current_venue_index], available_venues[current_venue_index])
-            time_slot = time_slots.get(form_data["time_value"], f"时间段{form_data['time_value']}")
+                successful_bookings.append({
+                    "time_slot": time_slots[time_value],
+                    "venue": available_venues[current_venue_index],
+                    "date": current_form_data["usage_date"]
+                })
             
-            print(f"场地 {venue_name} 预订成功!")
-            print(f"\n恭喜! 场地预订成功!")
-            print(f"预订详情:")
-            print(f"  - 日期: {form_data['usage_date']}")
-            print(f"  - 时间段: {time_slot}")
-            print(f"  - 场地: {venue_name}")
-            print(f"  - 负责人: {form_data['take_charge_person']}")
+            # 如果还有下一个时间段要预订，需要重新加载表单页面
+            if current_form_data != form_data_list[-1]:
+                if not booking.reload_form_page():
+                    print("重新加载表单页面失败，无法继续预订其他时间段")
+                    break
+                
+                # 重新填写基本表单信息
+                if not booking.fill_form(current_form_data):
+                    print("重新填写表单失败，无法继续预订其他时间段")
+                    break
         
-        # 等待几秒查看结果
+        # 显示所有成功预订的结果
+        if successful_bookings:
+            print("\n=== 预订成功的场地 ===")
+            for booking_info in successful_bookings:
+                venue_name = venue_names.get(booking_info["venue"], booking_info["venue"])
+                print(f"日期: {booking_info['date']}")
+                print(f"时间段: {booking_info['time_slot']}")
+                print(f"场地: {venue_name}")
+                print("------------------------")
+        else:
+            print("\n没有成功预订任何场地")
+        
+        # 保持页面打开一段时间
         time.sleep(600)
     except Exception as e:
         print(f"发生错误: {str(e)}")
