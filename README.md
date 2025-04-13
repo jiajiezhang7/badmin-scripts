@@ -128,7 +128,7 @@ password: "YourPassword"  # 您的密码
 # 预订信息
 venue_type: "羽毛球场"  # 场馆类型：羽毛球场、乒乓球、网球场
 participants: "4"  # 参加人数
-time_value: "6"  # 时间段代号，例如"6"表示16:00-17:00
+time_value: ["6", "7"]  # 时间段代号列表，例如["6", "7"]表示16:00-17:00和17:00-18:00
 venue_value: "63_17"  # 场地代号，例如"63_17"表示羽毛球5号场地
 people_category: "学生"  # 人员类别
 third_party: "无"  # 有无第三方服务
