@@ -117,7 +117,7 @@ def main():
                 
                 # 读取登录信息
                 student_id = params.get("student_id", "2023233216")
-                password = params.get("password", "ZHANGjiajie123")
+                password = params.get("password", "")
                 
             print(f"已从params.yaml加载配置: {form_data}")
             print(f"已从params.yaml加载登录信息: 学号={student_id}")
@@ -137,7 +137,7 @@ def main():
             }
             # 默认登录信息
             student_id = "2023233216"
-            password = "ZHANGjiajie123"
+            password = ""
         
         # 时间段映射
         time_slots = {
